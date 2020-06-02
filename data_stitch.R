@@ -51,7 +51,7 @@ week_dock_table <- data.frame(1:166) %>%
 
 
 agg_touchpoints <- total_touchpoints_data %>% arrange(desc(weekly_touchpoints)) %>% 
-  mutate(rn = row_number(), sum_weekly_touchpoints = cumsum(weekly_touchpoints)) %>% select(rn, sum_weekly_touchpoints)
+  mutate(rn = row_number(), sum_weekly_touchpoints = cumsum(floor(weekly_touchpoints))) %>% select(rn, sum_weekly_touchpoints)
 
 week_dock_touches <- week_dock_table %>% left_join(agg_touchpoints, by = c("num_stations"="rn")) %>% mutate(total_touches = num_weeks*sum_weekly_touchpoints)
   
@@ -63,3 +63,4 @@ echo_data_output <- week_dock_touches %>% mutate(Expected_Campaign_Revenue_per_w
 
 #ben <- journeys_data %>% filter(start_station_id == 191)
 
+write.csv(echo_data_output, "echo_data_output.csv")
