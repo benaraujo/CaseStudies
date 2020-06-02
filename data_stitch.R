@@ -1,7 +1,8 @@
 rm(list = ls())
 
 ##Install libraries
-
+#install.packages("dplyr")
+#install.packages("readr")
 library(dplyr)
 library(readr)
 
@@ -29,9 +30,13 @@ total_touchpoints_data <- all_stations %>% left_join(journey_start, by = c("id" 
 total_touchpoints_data <- total_touchpoints_data %>% mutate(total_touchpoints = num_start_journeys + num_end_journeys) %>% mutate(weekly_touchpoints = total_touchpoints/4)
 
 
-##Analysis
+#Output for Tableau
 
-conv_rate <- 0.25
+write.csv(total_touchpoints_data, "total_cycle_touchpoints.csv")
+
+## Further Analysis
+
+conv_rate <- 0.12
 
 week_dock_table <- data.frame(1:166) %>% 
   rename(num_stations_r = X1.166) %>%
@@ -50,14 +55,9 @@ agg_touchpoints <- total_touchpoints_data %>% arrange(desc(weekly_touchpoints)) 
 
 week_dock_touches <- week_dock_table %>% left_join(agg_touchpoints, by = c("num_stations"="rn")) %>% mutate(total_touches = num_weeks*sum_weekly_touchpoints)
   
-
-plot(week_dock_touches$num_stations, week_dock_touches$total_touches)
-
+echo_data_output <- week_dock_touches %>% mutate(Expected_Campaign_Revenue_per_week = sum_weekly_touchpoints * conv_rate * 179)
 
 
-#Output
-
-write.csv(total_touchpoints_data, "total_cycle_touchpoints.csv")
 
 #testing
 
