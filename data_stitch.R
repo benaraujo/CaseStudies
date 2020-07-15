@@ -5,62 +5,36 @@ rm(list = ls())
 #install.packages("readr")
 library(dplyr)
 library(readr)
+library(stringr)
 
-##Read data
+##Read metadata from Website
+meta_data_file <- read.csv2(file = "filenames.csv", sep = ",", header = FALSE)
+names(meta_data_file) <- c('file_name','upload_date', 'upload_time','file_size','file_type')
 
-journeys_data <- read.csv2("All_journeys_29thApr-26thMay.csv", header = TRUE ,sep = ",")
-names(journeys_data) <- c("rental_id", "duration", "bike_id", "end_date", "end_station_id", "end_station_name", "start_date", "start_station_id", "start_station_name")
-all_stations <- read.csv2("All_stations.csv", header = TRUE ,sep = ",")
-all_stations <- all_stations %>% select(id, latitude, longitude, name)
-##data manipulation
+##Only consider new format
+Journey_data <- meta_data_file[grep('JourneyDataExtract', meta_data_file$file_name),]
+##Generate ID for the filenames
+datasplit <- as.data.frame(str_split_fixed(Journey_data$file_name, "JourneyDataExtract", 2))
+names(datasplit) <- c("id", "date_range")
+datasplit$id <- as.integer(datasplit$id)
+Journey_data_indexed <- cbind(datasplit, Journey_data)
 
-#calculate number of journeys at starting point
+##Create list of files to be downloaded
+download_files <- Journey_data_indexed %>%
+  filter(between(id, 195, 215))
 
-journey_start <- journeys_data %>% group_by(start_station_id) %>% summarise(num_start_journeys = n_distinct(rental_id))
-
-#calculate number of journeys at ending point
-
-journey_end <- journeys_data %>% group_by(end_station_id) %>% summarise(num_end_journeys = n_distinct(rental_id))
-
-#join the data tables
-total_touchpoints_data <- all_stations %>% left_join(journey_start, by = c("id" = "start_station_id")) %>% left_join(journey_end, by = c("id" = "end_station_id"))
-
-# Add total Touchpoints and touch points per week
-
-total_touchpoints_data <- total_touchpoints_data %>% mutate(total_touchpoints = num_start_journeys + num_end_journeys) %>% mutate(weekly_touchpoints = total_touchpoints/4)
+ben <- read.csv2(paste("https://cycling.data.tfl.gov.uk/usage-stats/",download_files$file_name[1]), sep = ",", header = TRUE)
+names(ben)
 
 
-#Output for Tableau
-
-write.csv(total_touchpoints_data, "total_cycle_touchpoints.csv")
-
-## Further Analysis
-
-conv_rate <- 0.12
-
-week_dock_table <- data.frame(1:166) %>% 
-  rename(num_stations_r = X1.166) %>%
-  mutate(num_weeks = floor(((50000/num_stations_r) -100)/200)) %>%
-  group_by(num_weeks) %>%
-  summarise(num_stations = max(num_stations_r)) %>%
-  mutate(campaign_cost = num_stations*((200*num_weeks) + 100))
-
-#plot(week_dock_table$num_stations, week_dock_table$num_weeks)
+for(i in 1:dim(download_files)[1]){
+  if(i == 1) {journey_data_stitch <- read.csv2(paste("https://cycling.data.tfl.gov.uk/usage-stats/",download_files$file_name[i]), sep = ",", header = TRUE) }
+  if(i>1){
+    tempdata <- read.csv2(paste("https://cycling.data.tfl.gov.uk/usage-stats/",download_files$file_name[i]), sep = ",", header = TRUE)
+    journey_data_stitch <- rbind(journey_data_stitch, tempdata)
+  }
+}
+names(journey_data_stitch) <- c("rental_id", "duration", "bike_id", "end_date", "endstation_id", "endstation_name", "start_date", "startstation_id", "startstation_name")
+write.csv(journey_data_stitch, "journey_data_stitch_2020.csv")
 
 
-
-
-agg_touchpoints <- total_touchpoints_data %>% arrange(desc(weekly_touchpoints)) %>% 
-  mutate(rn = row_number(), sum_weekly_touchpoints = cumsum(floor(weekly_touchpoints))) %>% select(rn, sum_weekly_touchpoints)
-
-week_dock_touches <- week_dock_table %>% left_join(agg_touchpoints, by = c("num_stations"="rn")) %>% mutate(total_touches = num_weeks*sum_weekly_touchpoints)
-  
-echo_data_output <- week_dock_touches %>% mutate(Expected_Campaign_Revenue_per_week = sum_weekly_touchpoints * conv_rate * 179)
-
-
-
-#testing
-
-#ben <- journeys_data %>% filter(start_station_id == 191)
-
-write.csv(echo_data_output, "echo_data_output.csv")
