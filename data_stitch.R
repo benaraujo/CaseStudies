@@ -28,16 +28,25 @@ write.csv(meta_data_file, "meta_data_file.csv")
 
 ##Calling data extraction functions
 #extracting data between Week 1 and Week 22 for 2020
-journeys_w1_w22_2020 <- extract_journey_data(195, 215)
-write.csv(journeys_w1_w22_2020, "journeys_w1_w22_2020.csv")
+journeys_data_2020 <- extract_journey_data(195, 215)
+write.csv(journeys_data_2020, "journeys_data_2020.csv")
 
 
 #extracting data between Week 1 and Week 22 for 2019
-journeys_w1_w22_2019 <- extract_journey_data(142, 164)
-write.csv(journeys_w1_w22_2019, "journeys_w1_w22_2019.csv")
+journeys_data_2019 <- extract_journey_data(142, 164)
+write.csv(journeys_data_2019, "journeys_data_2019.csv")
 
 
 #extracting data between Week 1 and Week 22 for 2018
-journeys_w1_w22_2018 <- extract_journey_data(90, 112)
-write.csv(journeys_w1_w22_2018, "journeys_w1_w22_2018.csv")
+journeys_data_2018 <- extract_journey_data(90, 112)
+write.csv(journeys_data_2018, "journeys_data_2018.csv")
 
+##Read data files
+#If the tables don't exist in your workspace uncomment the below lines
+#journeys_data_2020 <- read.table("journeys_data_2020.csv", header = TRUE ,sep = ",") %>% select(-X)
+#journeys_data_2019 <- read.table("journeys_data_2019.csv", header = TRUE ,sep = ",") %>% select(-X)
+#journeys_data_2018 <- read.table("journeys_data_2018.csv", header = TRUE ,sep = ",") %>% select(-X)
+
+#Combine the yearly data into one file
+
+journey_data <- bind_rows(journeys_data_2018, journeys_data_2019, journeys_data_2020)

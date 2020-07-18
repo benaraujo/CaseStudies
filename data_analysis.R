@@ -3,15 +3,8 @@
 # Created by: benaraujo
 # Created on: 15/07/2020
 
-##Read data files
-
-journeys_data_2020 <- read.table("journeys_w1_w22_2020.csv", header = TRUE ,sep = ",") %>% select(-X)
-journeys_data_2019 <- read.table("journeys_w1_w22_2019.csv", header = TRUE ,sep = ",") %>% select(-X)
-journeys_data_2018 <- read.table("journeys_w1_w22_2018.csv", header = TRUE ,sep = ",") %>% select(-X)
-
 
 ##Yearly comparisons
-journey_data <- bind_rows(journeys_data_2018, journeys_data_2019, journeys_data_2020)
 
 journey_data_yoy <- journey_data %>%
   mutate(year_date = as.integer(year(as.Date(start_date, format = "%d/%m/%Y"))), week_num = as.integer(isoweek(as.Date(start_date, format = "%d/%m/%Y")))) %>%
