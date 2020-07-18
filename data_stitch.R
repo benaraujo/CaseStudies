@@ -1,40 +1,43 @@
-rm(list = ls())
+# Title     : Data stitch
+# Objective : Loading meta data and downloading all source files
+# Created by: benaraujo
 
-##Install libraries
-#install.packages("dplyr")
-#install.packages("readr")
-library(dplyr)
-library(readr)
-library(stringr)
+##Source functions R script
+source("functions.R", echo = TRUE)
 
-##Read metadata from Website
+##Read metadata
 meta_data_file <- read.csv2(file = "filenames.csv", sep = ",", header = FALSE)
 names(meta_data_file) <- c('file_name','upload_date', 'upload_time','file_size','file_type')
+url_prefix <- "https://cycling.data.tfl.gov.uk/usage-stats/"
+
+all_stations <- read.csv2("All_stations.csv", header = TRUE ,sep = ",")
+all_stations <- all_stations %>% select(id, latitude, longitude, name)
 
 ##Only consider new format
-Journey_data <- meta_data_file[grep('JourneyDataExtract', meta_data_file$file_name),]
+meta_data <- meta_data_file[grep('JourneyDataExtract', meta_data_file$file_name),]
 ##Generate ID for the filenames
-datasplit <- as.data.frame(str_split_fixed(Journey_data$file_name, "JourneyDataExtract", 2))
+datasplit <- as.data.frame(str_split_fixed(meta_data$file_name, "JourneyDataExtract", 2))
 names(datasplit) <- c("id", "date_range")
 datasplit$id <- as.integer(datasplit$id)
-Journey_data_indexed <- cbind(datasplit, Journey_data)
-
-##Create list of files to be downloaded
-download_files <- Journey_data_indexed %>%
-  filter(between(id, 195, 215))
-
-ben <- read.csv2(paste("https://cycling.data.tfl.gov.uk/usage-stats/",download_files$file_name[1]), sep = ",", header = TRUE)
-names(ben)
+meta_data_file <- cbind(datasplit, meta_data) %>%
+  filter(is.na(id) == FALSE)
 
 
-for(i in 1:dim(download_files)[1]){
-  if(i == 1) {journey_data_stitch <- read.csv2(paste("https://cycling.data.tfl.gov.uk/usage-stats/",download_files$file_name[i]), sep = ",", header = TRUE) }
-  if(i>1){
-    tempdata <- read.csv2(paste("https://cycling.data.tfl.gov.uk/usage-stats/",download_files$file_name[i]), sep = ",", header = TRUE)
-    journey_data_stitch <- rbind(journey_data_stitch, tempdata)
-  }
-}
-names(journey_data_stitch) <- c("rental_id", "duration", "bike_id", "end_date", "endstation_id", "endstation_name", "start_date", "startstation_id", "startstation_name")
-write.csv(journey_data_stitch, "journey_data_stitch_2020.csv")
+##Create metadata csv file
+write.csv(meta_data_file, "meta_data_file.csv")
 
+##Calling data extraction functions
+#extracting data between Week 1 and Week 22 for 2020
+journeys_w1_w22_2020 <- extract_journey_data(195, 215)
+write.csv(journeys_w1_w22_2020, "journeys_w1_w22_2020.csv")
+
+
+#extracting data between Week 1 and Week 22 for 2019
+journeys_w1_w22_2019 <- extract_journey_data(142, 164)
+write.csv(journeys_w1_w22_2019, "journeys_w1_w22_2019.csv")
+
+
+#extracting data between Week 1 and Week 22 for 2018
+journeys_w1_w22_2018 <- extract_journey_data(90, 112)
+write.csv(journeys_w1_w22_2018, "journeys_w1_w22_2018.csv")
 
